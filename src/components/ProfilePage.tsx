@@ -7,7 +7,7 @@ import AvatarEditor from '@/components/AvatarEditor';
 import type { Profile } from '@/lib/types';
 import { INTEREST_CATEGORIES } from '@/lib/types';
 import {
-  Loader2, AlertCircle, Check, X, Save, LogOut, EyeOff, Eye, School, Lock, Heart,
+  Loader2, AlertCircle, Check, X, Save, LogOut, EyeOff, Eye, School, Lock, Heart, MessageCircle,
 } from 'lucide-react';
 import Avatar from './Avatar';
 
@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [school, setSchool] = useState(profile?.school ?? '');
   const [grade, setGrade] = useState(profile?.grade ?? '');
   const [showSchool, setShowSchool] = useState(profile?.show_school ?? false);
+  const [dmPrivacy, setDmPrivacy] = useState<'all' | 'matches' | 'none'>(profile?.dm_privacy ?? 'all');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [blocked, setBlocked] = useState<Profile[] | null>(null);
@@ -40,6 +41,7 @@ export default function ProfilePage() {
     setSchool(profile.school ?? '');
     setGrade(profile.grade ?? '');
     setShowSchool(profile.show_school);
+    setDmPrivacy(profile.dm_privacy ?? 'all');
   }, [profile]);
 
   if (!profile || !user) return null;
@@ -94,6 +96,7 @@ export default function ProfilePage() {
         school: school.trim() || null,
         grade: grade.trim() || null,
         show_school: showSchool,
+        dm_privacy: dmPrivacy,
       });
       await refreshProfile();
       setMsg({ kind: 'ok', text: 'Профиль сохранён' });
@@ -235,6 +238,42 @@ export default function ProfilePage() {
           </label>
           <p className="mt-2 text-[11px] text-white/40">
             Пока выключено — школу и класс видишь только ты. Включи, чтобы тебя могли найти одноклассники.
+          </p>
+        </div>
+
+        {/* Настройки приватности сообщений */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/55">
+            <MessageCircle className="h-3.5 w-3.5 text-spark-300" /> Кто может написать мне первым
+          </span>
+          <div className="mt-3 flex flex-col gap-2">
+            {([
+              { value: 'all', label: 'Все пользователи' },
+              { value: 'matches', label: 'Только из взаимных матчей' },
+              { value: 'none', label: 'Никто (только если я писал первым)' },
+            ] as const).map((opt) => (
+              <label
+                key={opt.value}
+                className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm cursor-pointer transition-colors ${
+                  dmPrivacy === opt.value
+                    ? 'border-spark-500/60 bg-spark-500/10 text-white'
+                    : 'border-white/10 bg-ink-900/40 text-white/70 hover:text-white'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="dmPrivacy"
+                  checked={dmPrivacy === opt.value}
+                  onChange={() => setDmPrivacy(opt.value)}
+                  className="sr-only"
+                />
+                <span className={`h-4 w-4 rounded-full border-2 ${dmPrivacy === opt.value ? 'border-spark-400 bg-spark-400' : 'border-white/30'}`} />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-white/40">
+            Настройка применяется на сервере — никто не сможет обойти её.
           </p>
         </div>
 

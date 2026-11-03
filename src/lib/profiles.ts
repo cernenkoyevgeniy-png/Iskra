@@ -21,18 +21,14 @@ export async function getProfile(id: string): Promise<Profile | null> {
 }
 
 export async function checkNicknameTaken(nickname: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id')
-    .ilike('nickname', nickname)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('check_nickname_available', { p_nickname: nickname });
   if (error) throw error;
-  return !!data;
+  return !data;
 }
 
 export async function updateProfile(
   id: string,
-  patch: Partial<Pick<Profile, 'nickname' | 'avatar_url' | 'bio' | 'interests' | 'hidden_from_search' | 'hidden_from_match' | 'school' | 'grade' | 'show_school'>>,
+  patch: Partial<Pick<Profile, 'nickname' | 'avatar_url' | 'bio' | 'interests' | 'hidden_from_search' | 'hidden_from_match' | 'school' | 'grade' | 'show_school' | 'dm_privacy'>>,
 ) {
   // Без .select(): RETURNING * запросил бы school/grade/show_school, на которые
   // у authenticated нет SELECT-привилегии — весь UPDATE упал бы с 42501,

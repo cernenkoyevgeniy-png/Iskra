@@ -2,9 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { Group, GroupMember, GroupMessage } from '@/lib/types';
 
 export async function listMyGroups(): Promise<(Group & { member_count: number })[]> {
-  const me = (await supabase.auth.getUser()).data.user;
-  if (!me) throw new Error('Не авторизован');
-  const { data, error } = await supabase.rpc('list_my_groups', { me_id: me.id });
+  const { data, error } = await supabase.rpc('list_my_groups');
   if (error) throw error;
   return (data ?? []) as (Group & { member_count: number })[];
 }
@@ -79,9 +77,35 @@ export async function listGroupMembers(groupId: string): Promise<(GroupMember & 
 }
 
 export async function addGroupMember(groupId: string, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('group_members')
-    .insert({ group_id: groupId, user_id: userId, is_admin: false });
+  const { error } = await supabase.rpc('create_group_invitation', {
+    p_group_id: groupId,
+    p_invitee_id: userId,
+  });
+  if (error) throw error;
+}
+
+export type GroupInvitation = {
+  id: string;
+  group_id: string;
+  group_name: string;
+  inviter_id: string;
+  inviter_nickname: string;
+  created_at: string;
+};
+
+export async function listMyInvitations(): Promise<GroupInvitation[]> {
+  const { data, error } = await supabase.rpc('list_my_invitations');
+  if (error) throw error;
+  return (data ?? []) as GroupInvitation[];
+}
+
+export async function acceptInvitation(invitationId: string): Promise<void> {
+  const { error } = await supabase.rpc('accept_group_invitation', { p_invitation_id: invitationId });
+  if (error) throw error;
+}
+
+export async function declineInvitation(invitationId: string): Promise<void> {
+  const { error } = await supabase.rpc('decline_group_invitation', { p_invitation_id: invitationId });
   if (error) throw error;
 }
 

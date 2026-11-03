@@ -4,19 +4,20 @@ import {
   listMyGroups, createGroup, getGroup, listGroupMembers, addGroupMember,
   removeGroupMember, setGroupAdmin, leaveGroup, fetchGroupMessages, sendGroupMessage,
   searchPublicGroups, joinGroup, type PublicGroup,
+  listMyInvitations, acceptInvitation, declineInvitation, type GroupInvitation,
 } from '@/lib/groups';
 import { searchProfiles } from '@/lib/profiles';
 import type { Group, GroupMessage, Profile } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import {
   Send, ArrowLeft, Loader2, AlertCircle, Users, Plus, X, Search, Crown,
-  UserMinus, Shield, LogOut, Check, Globe, Lock, UserPlus,
+  UserMinus, Shield, LogOut, Check, Globe, Lock, UserPlus, Mail,
 } from 'lucide-react';
 import Avatar from './Avatar';
 
 type GroupMemberLite = { user_id: string; is_admin: boolean };
 
-type View = 'my' | 'discover';
+type View = 'my' | 'discover' | 'invites';
 
 export default function GroupsPage({ onBack }: { onBack: () => void }) {
   const [view, setView] = useState<View>('my');
@@ -28,11 +29,14 @@ export default function GroupsPage({ onBack }: { onBack: () => void }) {
   const [isPublic, setIsPublic] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<Group | null>(null);
+  const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
 
   const load = async () => {
     setLoading(true);
     try {
-      setGroups(await listMyGroups());
+      const [groupsData, invData] = await Promise.all([listMyGroups(), listMyInvitations()]);
+      setGroups(groupsData);
+      setInvitations(invData);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Ошибка');
     } finally {
@@ -152,6 +156,17 @@ export default function GroupsPage({ onBack }: { onBack: () => void }) {
           >
             <Search className="h-4 w-4" /> Поиск
           </button>
+          {invitations.length > 0 && (
+            <button
+              onClick={() => setView('invites')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                view === 'invites' ? 'bg-gradient-to-r from-spark-500 to-rose-500 text-white' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <Mail className="h-4 w-4" /> Приглашения
+              <span className="rounded-full bg-spark-500 px-1.5 text-[10px] font-bold text-white">{invitations.length}</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -195,6 +210,13 @@ export default function GroupsPage({ onBack }: { onBack: () => void }) {
       )}
 
       {view === 'discover' && <DiscoverView onJoined={load} />}
+
+      {view === 'invites' && (
+        <InvitationsView
+          invitations={invitations}
+          onRespond={load}
+        />
+      )}
     </div>
   );
 }

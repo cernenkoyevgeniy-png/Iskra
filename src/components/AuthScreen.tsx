@@ -46,6 +46,9 @@ export default function AuthScreen() {
         if (nickErr) throw new Error(nickErr);
         if (password.length < 6) throw new Error('Пароль должен быть не короче 6 символов');
 
+        const { data: nickAvailable } = await supabase.rpc('check_nickname_available', { p_nickname: nickname.trim() });
+        if (nickAvailable === false) throw new Error('Этот никнейм уже занят. Придумай другой.');
+
         const { data, error: err } = await supabase.auth.signUp({
           email,
           password,

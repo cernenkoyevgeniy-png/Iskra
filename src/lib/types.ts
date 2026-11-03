@@ -9,6 +9,7 @@ export type Profile = {
   school: string | null;
   grade: string | null;
   show_school: boolean;
+  dm_privacy: 'all' | 'matches' | 'none';
   created_at: string;
   updated_at: string;
 };

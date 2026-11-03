@@ -82,10 +82,7 @@ export type ConversationRow = {
 };
 
 export async function fetchConversations(): Promise<ConversationRow[]> {
-  const me = (await supabase.auth.getUser()).data.user;
-  if (!me) throw new Error('Не авторизован');
-
-  const { data, error } = await supabase.rpc('list_conversations', { me_id: me.id });
+  const { data, error } = await supabase.rpc('list_conversations');
   if (error) throw error;
   return (data ?? []) as ConversationRow[];
 }
