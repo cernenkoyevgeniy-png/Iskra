@@ -58,10 +58,17 @@ export async function unblockUser(blockedId: string) {
 export async function listBlockedUsers(): Promise<Profile[]> {
   const { data, error } = await supabase
     .from('blocks')
-    .select('blocked_id, profiles:profiles!blocks_blocked_id_fkey(*)')
+    .select('blocked_id, profiles:profiles!blocks_blocked_id_fkey(id, nickname, avatar_url, bio, interests, hidden_from_search, created_at, updated_at)')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return ((data ?? []) as unknown as { profiles: Profile }[]).map((r) => r.profiles);
+  return ((data ?? []) as unknown as { profiles: Profile }[]).map((r) => ({
+    ...r.profiles,
+    school: null,
+    grade: null,
+    show_school: false,
+    hidden_from_match: false,
+    dm_privacy: 'all',
+  }));
 }
 
 export async function isBlocked(userId: string): Promise<boolean> {
