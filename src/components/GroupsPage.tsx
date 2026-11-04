@@ -632,3 +632,88 @@ function InviteModal({
     </div>
   );
 }
+
+function InvitationsView({
+  invitations,
+  onRespond,
+}: {
+  invitations: GroupInvitation[];
+  onRespond: () => void;
+}) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleAccept = async (id: string) => {
+    setBusy(id);
+    setErr(null);
+    try {
+      await acceptInvitation(id);
+      onRespond();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDecline = async (id: string) => {
+    setBusy(id);
+    setErr(null);
+    try {
+      await declineInvitation(id);
+      onRespond();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="mt-6 space-y-2">
+      {err && (
+        <div className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-200">
+          <AlertCircle className="h-4 w-4 shrink-0" /> {err}
+        </div>
+      )}
+      {invitations.length === 0 && (
+        <div className="rounded-3xl border border-white/10 bg-ink-900/50 p-10 text-center">
+          <Mail className="mx-auto h-10 w-10 text-white/30" />
+          <p className="mt-3 text-sm text-white/55">Нет приглашений</p>
+        </div>
+      )}
+      {invitations.map((inv) => (
+        <div
+          key={inv.id}
+          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-ink-900/50 p-4"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-spark-500/40 to-rose-500/30">
+            <Users className="h-6 w-6 text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-base font-bold text-white">{inv.group_name}</p>
+            <p className="text-xs text-white/55">
+              Приглашение от <span className="text-spark-300">{inv.inviter_nickname}</span>
+            </p>
+          </div>
+          <button
+            onClick={() => handleDecline(inv.id)}
+            disabled={busy === inv.id}
+            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:text-white disabled:opacity-50"
+          >
+            {busy === inv.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+            Отклонить
+          </button>
+          <button
+            onClick={() => handleAccept(inv.id)}
+            disabled={busy === inv.id}
+            className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-spark-500 to-rose-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            {busy === inv.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            Принять
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
