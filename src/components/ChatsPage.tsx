@@ -158,8 +158,23 @@ function ConversationView({ other, onBack }: { other: Profile; onBack: () => voi
         (payload) => {
           const m = payload.new as DirectMessage;
           if (m.sender_id === other.id) {
-            setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+            setMessages((prev) => (prev.some((x) => x.id === m.id || (x.id === '' && x.body === m.body && x.sender_id === m.sender_id)) ? prev.map((x) => x.id === '' && x.body === m.body ? m : x) : [...prev, m]));
             markConversationRead(other.id);
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `sender_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          const m = payload.new as DirectMessage;
+          if (m.recipient_id === other.id) {
+            setMessages((prev) => (prev.some((x) => x.id === m.id || (x.id === '' && x.body === m.body && x.sender_id === m.sender_id)) ? prev.map((x) => x.id === '' && x.body === m.body ? m : x) : [...prev, m]));
           }
         },
       )
@@ -172,7 +187,6 @@ function ConversationView({ other, onBack }: { other: Profile; onBack: () => voi
         },
         (payload) => {
           const m = payload.new as DirectMessage;
-          // Soft-delete собеседником или собой — обновляем плейсхолдер у обоих.
           if (
             (m.sender_id === other.id && m.recipient_id === user?.id) ||
             (m.sender_id === user?.id && m.recipient_id === other.id)
@@ -192,11 +206,18 @@ function ConversationView({ other, onBack }: { other: Profile; onBack: () => voi
 
   const handleSend = async () => {
     if (!text.trim()) return;
+    const body = text.trim();
     setSending(true);
     setErr(null);
     try {
-      const m = await sendDirectMessage(other.id, text);
-      setMessages((prev) => [...prev, m]);
+      const m = await sendDirectMessage(other.id, body);
+      setMessages((prev) => {
+        if (prev.some((x) => x.id === m.id && m.id)) return prev;
+        if (prev.some((x) => x.id === '' && x.body === body && x.sender_id === m.sender_id)) {
+          return prev.map((x) => x.id === '' && x.body === body ? m : x);
+        }
+        return [...prev, m];
+      });
       setText('');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Не удалось отправить');

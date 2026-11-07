@@ -377,11 +377,18 @@ function GroupChatView({ group, onBack }: { group: Group; onBack: () => void }) 
 
   const handleSend = async () => {
     if (!text.trim()) return;
+    const body = text.trim();
     setSending(true);
     setErr(null);
     try {
-      const m = await sendGroupMessage(group.id, text);
-      setMessages((prev) => [...prev, { ...m, sender_nickname: 'ты' }]);
+      const m = await sendGroupMessage(group.id, body);
+      setMessages((prev) => {
+        if (prev.some((x) => x.id === m.id && m.id)) return prev;
+        if (prev.some((x) => x.id === '' && x.body === body && x.sender_id === m.sender_id)) {
+          return prev.map((x) => x.id === '' && x.body === body ? { ...m, sender_nickname: 'ты' } : x);
+        }
+        return [...prev, { ...m, sender_nickname: 'ты' }];
+      });
       setText('');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Не удалось отправить');
